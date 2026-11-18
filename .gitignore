@@ -1,0 +1,17 @@
+# Secrets
+api_key
+.env
+
+# Generated
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+wandb/
+*.pt
+*.egg-info/
+dist/
+build/
+
+# Editor / OS
+.idea/
+.DS_Store
