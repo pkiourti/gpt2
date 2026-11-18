@@ -10,3 +10,4 @@ class TransformerTrainingArgs:
     wandb_project: str | None = "demotransformer"
     wandb_name: str | None = None
     eval_prompt: str = "Once upon a time"
+    checkpoint_dir: str | None = "checkpoints"  # None disables saving; on Colab, point this at Google Drive

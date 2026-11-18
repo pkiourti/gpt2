@@ -1,4 +1,4 @@
-import torch as t
+import torch
 import torch.nn as nn
 from torch import Tensor
 from jaxtyping import Float, Int

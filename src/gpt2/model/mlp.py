@@ -1,4 +1,4 @@
-import torch as t
+import torch
 import torch.nn as nn
 from torch import Tensor
 import einops
@@ -10,10 +10,10 @@ class MLP(nn.Module):
     def __init__(self, cfg: Config):
         super().__init__()
         self.cfg = cfg
-        self.W_in = nn.Parameter(t.empty((cfg.d_model, cfg.d_mlp)))
-        self.W_out = nn.Parameter(t.empty((cfg.d_mlp, cfg.d_model)))
-        self.b_in = nn.Parameter(t.zeros((cfg.d_mlp)))
-        self.b_out = nn.Parameter(t.zeros((cfg.d_model)))
+        self.W_in = nn.Parameter(torch.empty((cfg.d_model, cfg.d_mlp)))
+        self.W_out = nn.Parameter(torch.empty((cfg.d_mlp, cfg.d_model)))
+        self.b_in = nn.Parameter(torch.zeros((cfg.d_mlp)))
+        self.b_out = nn.Parameter(torch.zeros((cfg.d_model)))
         nn.init.normal_(self.W_in, std=self.cfg.init_range)
         nn.init.normal_(self.W_out, std=self.cfg.init_range)
 

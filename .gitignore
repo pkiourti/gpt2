@@ -8,6 +8,7 @@ __pycache__/
 .ipynb_checkpoints/
 wandb/
 *.pt
+checkpoints/
 *.egg-info/
 dist/
 build/

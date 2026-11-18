@@ -1,4 +1,4 @@
-import torch as t
+import torch
 import torch.nn as nn
 from torch import Tensor
 import einops
@@ -9,8 +9,8 @@ class Unembed(nn.Module):
     def __init__(self, cfg: Config):
         super().__init__()
         self.cfg = cfg
-        self.W_U = nn.Parameter(t.empty((cfg.d_model, cfg.d_vocab)))
-        self.b_U = nn.Parameter(t.zeros((cfg.d_vocab)), requires_grad=False)
+        self.W_U = nn.Parameter(torch.empty((cfg.d_model, cfg.d_vocab)))
+        self.b_U = nn.Parameter(torch.zeros((cfg.d_vocab)), requires_grad=False)
         nn.init.normal_(self.W_U, std=self.cfg.init_range)
 
     def forward(

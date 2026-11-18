@@ -1,5 +1,5 @@
 import einops
-import torch as t
+import torch
 import torch.nn as nn
 from jaxtyping import Float, Int
 from torch import Tensor
@@ -11,7 +11,7 @@ class Embed(nn.Module):
     def __init__(self, cfg: Config):
         super().__init__()
         self.cfg = cfg
-        self.W_E = nn.Parameter(t.empty((cfg.d_vocab, cfg.d_model)))
+        self.W_E = nn.Parameter(torch.empty((cfg.d_vocab, cfg.d_model)))
         nn.init.normal_(self.W_E, std=self.cfg.init_range)
 
     def forward(self, tokens: Int[Tensor, "batch position"]) -> Float[Tensor, "batch position d_model"]:
@@ -22,7 +22,7 @@ class PosEmbed(nn.Module):
     def __init__(self, cfg: Config):
         super().__init__()
         self.cfg = cfg
-        self.W_pos = nn.Parameter(t.empty((cfg.n_ctx, cfg.d_model)))
+        self.W_pos = nn.Parameter(torch.empty((cfg.n_ctx, cfg.d_model)))
         nn.init.normal_(self.W_pos, std=cfg.init_range)
 
     def forward(self, tokens: Int[Tensor, "batch position"]) -> Float[Tensor, "batch position d_model"]:

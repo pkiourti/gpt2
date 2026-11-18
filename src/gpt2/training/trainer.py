@@ -1,4 +1,6 @@
-import torch as t
+from pathlib import Path
+
+import torch
 import numpy as np
 from torch import Tensor
 from jaxtyping import Float, Int
@@ -25,8 +27,9 @@ class TransformerTrainer:
         self.device = model.device
         self.args = args
         self.sampler = TransformerSampler(self.model, tokenizer)
-        self.optimizer = t.optim.AdamW(self.model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+        self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
         self.step = 0
+        self.start_epoch = 0
 
         self.train_loader = DataLoader(
             dataset_dict["train"],
@@ -51,7 +54,7 @@ class TransformerTrainer:
         wandb.log({"train_loss": loss}, step=self.step)
         return loss
 
-    @t.inference_mode()
+    @torch.inference_mode()
     def evaluate(self) -> float:
         self.model.eval()
         total_correct, total_samples = 0, 0
@@ -66,14 +69,40 @@ class TransformerTrainer:
         self.model.train()
         return accuracy
 
+    def save_checkpoint(self, epoch: int) -> Path | None:
+        """Save model and optimizer state so training can resume after a crash or Colab disconnect."""
+        if self.args.checkpoint_dir is None:
+            return None
+        checkpoint_dir = Path(self.args.checkpoint_dir)
+        checkpoint_dir.mkdir(parents=True, exist_ok=True)
+        checkpoint = {
+            "model": self.model.state_dict(),
+            "optimizer": self.optimizer.state_dict(),
+            "step": self.step,
+            "epoch": epoch,
+            "config": self.model.cfg,
+        }
+        path = checkpoint_dir / f"epoch_{epoch + 1:03d}.pt"
+        torch.save(checkpoint, path)
+        torch.save(checkpoint, checkpoint_dir / "latest.pt")
+        return path
+
+    def load_checkpoint(self, path: str | Path) -> None:
+        """Restore model and optimizer state; train() then continues from the epoch after the saved one."""
+        checkpoint = torch.load(path, map_location=self.device, weights_only=False)
+        self.model.load_state_dict(checkpoint["model"])
+        self.optimizer.load_state_dict(checkpoint["optimizer"])
+        self.step = checkpoint["step"]
+        self.start_epoch = checkpoint["epoch"] + 1
+
     def train(self):
         wandb.init(project=self.args.wandb_project, name=self.args.wandb_name, config=self.args)
         accuracy = np.nan
 
-        progress_bar = tqdm(total=self.args.max_steps_per_epoch * self.args.epochs)
+        progress_bar = tqdm(total=self.args.max_steps_per_epoch * (self.args.epochs - self.start_epoch))
 
         print(self.sampler.sample(self.args.eval_prompt, max_tokens_generated=50))
-        for epoch in range(self.args.epochs):
+        for epoch in range(self.start_epoch, self.args.epochs):
             for i, batch in enumerate(self.train_loader):
                 loss = self.training_step(batch)
                 progress_bar.update()
@@ -83,5 +112,6 @@ class TransformerTrainer:
 
             accuracy = self.evaluate()
             print(self.sampler.sample(self.args.eval_prompt, max_tokens_generated=50))
+            self.save_checkpoint(epoch)
 
         wandb.finish()

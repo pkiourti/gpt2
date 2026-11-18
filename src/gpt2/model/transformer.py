@@ -1,4 +1,4 @@
-import torch as t
+import torch
 import torch.nn as nn
 from torch import Tensor
 from gpt2.model.embed import Embed, PosEmbed
@@ -19,7 +19,7 @@ class Transformer(nn.Module):
         self.unembed = Unembed(cfg)
 
     @property
-    def device(self) -> t.device:
+    def device(self) -> torch.device:
         return next(self.parameters()).device
 
     def forward(

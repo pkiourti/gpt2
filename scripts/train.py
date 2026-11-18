@@ -1,16 +1,16 @@
-import torch as t
+import torch
 from transformers import GPT2TokenizerFast
 
 from gpt2 import Config, Transformer
 from gpt2.training import TransformerTrainer, TransformerTrainingArgs, load_tinystories
 
 
-def get_device() -> t.device:
-    if t.backends.mps.is_available():
-        return t.device("mps")
-    if t.cuda.is_available():
-        return t.device("cuda")
-    return t.device("cpu")
+def get_device() -> torch.device:
+    if torch.backends.mps.is_available():
+        return torch.device("mps")
+    if torch.cuda.is_available():
+        return torch.device("cuda")
+    return torch.device("cpu")
 
 
 def main():

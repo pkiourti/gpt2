@@ -1,4 +1,4 @@
-import torch as t
+import torch
 import torch.nn as nn
 from torch import Tensor
 from jaxtyping import Float, Int
@@ -8,8 +8,8 @@ class LayerNorm(nn.Module):
     def __init__(self, cfg: Config):
         super().__init__()
         self.cfg = cfg
-        self.w = nn.Parameter(t.ones(cfg.d_model))
-        self.b = nn.Parameter(t.zeros(cfg.d_model))
+        self.w = nn.Parameter(torch.ones(cfg.d_model))
+        self.b = nn.Parameter(torch.zeros(cfg.d_model))
 
     def forward(self, residual: Float[Tensor, "batch posn d_model"]) -> Float[Tensor, "batch posn d_model"]:
         mean = residual.mean(dim=-1, keepdim=True)

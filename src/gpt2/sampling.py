@@ -1,4 +1,4 @@
-import torch as t
+import torch
 import numpy as np
 from torch import Tensor
 from jaxtyping import Float, Int
@@ -14,7 +14,7 @@ class TransformerSampler:
         self.cfg = model.cfg
         self.tokenizer = tokenizer
 
-    @t.inference_mode()
+    @torch.inference_mode()
     def sample(self, prompt: str, max_tokens_generated=100, verbose=False, **kwargs) -> str:
         """
         Returns a string of autoregressively generated text, starting from the prompt.
@@ -26,14 +26,14 @@ class TransformerSampler:
         self.model.eval()
         seed = kwargs.pop("seed", None)
         if seed is not None:
-            t.manual_seed(seed)
+            torch.manual_seed(seed)
             np.random.seed(seed)
         input_ids = self.tokenizer.encode(prompt, return_tensors="pt").to(self.device)[0]
         for i in range(max_tokens_generated):
             logits = self.model(input_ids[None, -self.cfg.n_ctx:])
             logits = logits[0, -1]
             sample = TransformerSampler.sample_next_token(input_ids, logits, **kwargs)
-            input_ids = t.cat([input_ids, t.tensor([sample], device=self.device)], dim=-1)
+            input_ids = torch.cat([input_ids, torch.tensor([sample], device=self.device)], dim=-1)
             if verbose:
                 print(self.tokenizer.decode(input_ids, skip_special_tokens=True, end="\r"))
             if sample == getattr(self.tokenizer, "eos_token_id", None):
@@ -92,7 +92,7 @@ class TransformerSampler:
         Applies a frequency penalty to the logits.
         """
         d_vocab = logits.size(0)
-        token_freq = t.bincount(input_ids, minlength=d_vocab)
+        token_freq = torch.bincount(input_ids, minlength=d_vocab)
         return logits - freq_penalty * token_freq
 
     @staticmethod
@@ -100,7 +100,7 @@ class TransformerSampler:
         """
         Samples from the distribution defined by the logits.
         """
-        sampled_token = t.distributions.categorical.Categorical(logits=logits).sample()
+        sampled_token = torch.distributions.categorical.Categorical(logits=logits).sample()
         return sampled_token.item()
 
     @staticmethod
@@ -109,7 +109,7 @@ class TransformerSampler:
         Samples from the top k most likely tokens.
         """
         top_k = logits.argsort()[-1*k:]
-        sampled_token = t.distributions.categorical.Categorical(logits=logits[top_k]).sample()
+        sampled_token = torch.distributions.categorical.Categorical(logits=logits[top_k]).sample()
         return top_k[sampled_token].item() #sampled_token.item()
 
     @staticmethod
@@ -118,15 +118,15 @@ class TransformerSampler:
         Samples from the most likely tokens which make up at least p cumulative probability.
         """
         sorted_logits, sorted_indices = logits.sort(descending=True, stable=True)
-        cumsum = t.cumsum(sorted_logits.softmax(-1), dim=-1)
-        ids = t.where(cumsum >= top_p)[0]
+        cumsum = torch.cumsum(sorted_logits.softmax(-1), dim=-1)
+        ids = torch.where(cumsum >= top_p)[0]
         sorted_logits[ids[0]+1:] = 0
         len_tokens = max(len(sorted_logits[:ids[0]+1]), min_tokens_to_keep)
         keep_logits = sorted_logits[sorted_indices[:len_tokens]]
-        next_token = t.distributions.categorical.Categorical(logits=keep_logits).sample()
+        next_token = torch.distributions.categorical.Categorical(logits=keep_logits).sample()
         return sorted_indices[next_token].item()
 
-    @t.inference_mode()
+    @torch.inference_mode()
     def beam_search(
         self,
         prompt: str,

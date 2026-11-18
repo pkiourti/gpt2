@@ -1,4 +1,4 @@
-import torch as t
+import torch
 import torch.nn as nn
 from torch import Tensor
 import einops
@@ -11,19 +11,19 @@ class Attention(nn.Module):
     def __init__(self, cfg: Config):
         super().__init__()
         self.cfg = cfg
-        self.W_Q = nn.Parameter(t.empty((cfg.n_heads, cfg.d_model, cfg.d_head)))
-        self.W_K = nn.Parameter(t.empty((cfg.n_heads, cfg.d_model, cfg.d_head)))
-        self.W_V = nn.Parameter(t.empty((cfg.n_heads, cfg.d_model, cfg.d_head)))
-        self.W_O = nn.Parameter(t.empty((cfg.n_heads, cfg.d_head, cfg.d_model)))
-        self.b_Q = nn.Parameter(t.zeros((cfg.n_heads, cfg.d_head)))
-        self.b_K = nn.Parameter(t.zeros((cfg.n_heads, cfg.d_head)))
-        self.b_V = nn.Parameter(t.zeros((cfg.n_heads, cfg.d_head)))
-        self.b_O = nn.Parameter(t.zeros((cfg.d_model)))
+        self.W_Q = nn.Parameter(torch.empty((cfg.n_heads, cfg.d_model, cfg.d_head)))
+        self.W_K = nn.Parameter(torch.empty((cfg.n_heads, cfg.d_model, cfg.d_head)))
+        self.W_V = nn.Parameter(torch.empty((cfg.n_heads, cfg.d_model, cfg.d_head)))
+        self.W_O = nn.Parameter(torch.empty((cfg.n_heads, cfg.d_head, cfg.d_model)))
+        self.b_Q = nn.Parameter(torch.zeros((cfg.n_heads, cfg.d_head)))
+        self.b_K = nn.Parameter(torch.zeros((cfg.n_heads, cfg.d_head)))
+        self.b_V = nn.Parameter(torch.zeros((cfg.n_heads, cfg.d_head)))
+        self.b_O = nn.Parameter(torch.zeros((cfg.d_model)))
         nn.init.normal_(self.W_Q, std=self.cfg.init_range)
         nn.init.normal_(self.W_K, std=self.cfg.init_range)
         nn.init.normal_(self.W_V, std=self.cfg.init_range)
         nn.init.normal_(self.W_O, std=self.cfg.init_range)
-        self.register_buffer("IGNORE", t.tensor(float("-inf"), dtype=t.float32))
+        self.register_buffer("IGNORE", torch.tensor(float("-inf"), dtype=torch.float32))
 
     def forward(self,
                 normalized_resid_pre: Float[Tensor, "batch pos d_model"]
@@ -82,6 +82,6 @@ class Attention(nn.Module):
             attn_scores: Float[Tensor, "batch n_heads query_pos key_pos"],
     ) -> Float[Tensor, "batch n_heads query_pos key_pos"]:
         q_size, k_size = attn_scores.size(-2), attn_scores.size(-1)
-        all_ones = t.ones(q_size, k_size, device=attn_scores.device)
-        mask = t.triu(all_ones, diagonal=1).bool()
+        all_ones = torch.ones(q_size, k_size, device=attn_scores.device)
+        mask = torch.triu(all_ones, diagonal=1).bool()
         return attn_scores.masked_fill_(mask, self.IGNORE)
