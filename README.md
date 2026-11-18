@@ -24,4 +24,4 @@ uv run python gpt2/scripts/train.py
 uv run pytest gpt2
 ```
 
-Set `WANDB_API_KEY` (or run `wandb login`) before training.
+Set `WANDB_API_KEY` (or run `uv run wandb login`) before training.
