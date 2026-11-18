@@ -1,4 +1,4 @@
-# gpt2
+# GPT-2
 
 GPT-2 small written from scratch (following ARENA), plus a sampler and a trainer for TinyStories.
 
