@@ -41,8 +41,14 @@ class TransformerTrainer:
         )
 
         # Mixed precision: autocast runs matmuls in 16-bit. fp16 needs loss scaling to avoid gradient underflow.
+        # including_emulation=False: by default a T4 reports bf16 as "supported" via slow emulation, while its
+        # tensor cores only run fp16. Native bf16 needs compute capability 8.0+ (A100, L4).
         use_amp = args.mixed_precision and self.device.type == "cuda"
-        self.amp_dtype = (torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16) if use_amp else None
+        if use_amp:
+            native_bf16 = torch.cuda.is_bf16_supported(including_emulation=False)
+            self.amp_dtype = torch.bfloat16 if native_bf16 else torch.float16
+        else:
+            self.amp_dtype = None
         self.scaler = torch.amp.GradScaler("cuda", enabled=self.amp_dtype == torch.float16)
 
         self.train_loader = DataLoader(dataset_dict["train"], batch_size=args.batch_size, shuffle=True)
@@ -139,6 +145,8 @@ class TransformerTrainer:
         self.step = checkpoint["step"]
         if "scheduler" in checkpoint:
             self.scheduler.load_state_dict(checkpoint["scheduler"])
+        # Empty when saved without fp16 loss scaling (fp32 or bf16); then the scaler starts fresh.
+        if checkpoint.get("scaler") and self.scaler.is_enabled():
             self.scaler.load_state_dict(checkpoint["scaler"])
 
     def _due(self, every: int | None) -> bool:
