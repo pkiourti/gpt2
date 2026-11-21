@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 import datasets
 from transformer_lens.utils import tokenize_and_concatenate
@@ -23,8 +24,7 @@ def load_text_dataset(
     like FineWeb-Edu. The test split is test_size rows, or 10% of the rows if that's smaller (small test runs).
     """
     if streaming:
-        stream = datasets.load_dataset(path, name=name, split="train", streaming=True)
-        dataset = datasets.Dataset.from_list([{column: row[column]} for row in stream.take(n_samples)])
+        dataset = _load_streamed_to_disk(path, name, column, n_samples)
     else:
         dataset = datasets.load_dataset(path, name=name, split="train")
         dataset = dataset.select(range(min(n_samples, len(dataset))))
@@ -47,6 +47,22 @@ def load_text_dataset(
         f"({n_rows * n_ctx:,} tokens); {test_size:,} held out for testing"
     )
     return tokenized.train_test_split(test_size=test_size)
+
+
+def _load_streamed_to_disk(path: str, name: str | None, column: str, n_samples: int) -> datasets.Dataset:
+    """Stream the first n_samples documents and keep them as an on-disk dataset, reused on later calls.
+
+    Keeping them only in RAM (Dataset.from_list) breaks multi-process tokenization: map() then sends each
+    worker's whole output back through a pipe, which fails on large inputs with an EOFError. An on-disk
+    dataset makes map() write each worker's output to cache files instead.
+    """
+    local_dir = Path(datasets.config.HF_DATASETS_CACHE) / "streamed" / f"{path.replace('/', '__')}_{name}_{column}_{n_samples}"
+    if not (local_dir / "dataset_info.json").exists():
+        stream = datasets.load_dataset(path, name=name, split="train", streaming=True)
+        in_memory = datasets.Dataset.from_list([{column: row[column]} for row in stream.take(n_samples)])
+        in_memory.save_to_disk(str(local_dir))
+        del in_memory
+    return datasets.load_from_disk(str(local_dir))
 
 
 def load_tinystories(
