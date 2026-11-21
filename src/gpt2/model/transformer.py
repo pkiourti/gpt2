@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from torch import Tensor
+import torch.nn.functional as F
 from gpt2.model.embed import Embed, PosEmbed
 from gpt2.model.block import TransformerBlock
 from gpt2.model.layer_norm import LayerNorm
@@ -36,7 +37,10 @@ class Transformer(nn.Module):
         self,
         logits: Float[Tensor, "batch posn d_vocab"], tokens: Int[Tensor, "batch posn"]
     ) -> Float[Tensor, "batch posn-1"]:
-        log_probs = logits.log_softmax(dim=-1)
-        # Get logprobs for the first seq_len-1 predictions (so we can compare them with the actual next tokens)
-        log_probs_for_tokens = log_probs[:, :-1].gather(dim=-1, index=tokens[:, 1:].unsqueeze(-1)).squeeze(-1)
-        return log_probs_for_tokens
+        batch, size = tokens.shape
+        nll = F.cross_entropy(
+            logits[:, :-1].reshape(-1, self.cfg.d_vocab),
+            tokens[:, 1:].reshape(-1),
+            reduction="none"
+        )
+        return -nll.reshape(batch, size - 1)
