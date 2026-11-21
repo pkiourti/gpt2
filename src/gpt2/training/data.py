@@ -18,8 +18,9 @@ def load_text_dataset(
 ) -> datasets.DatasetDict:
     """Load a Hugging Face text dataset, tokenize it into n_ctx-token sequences, and split into train/test.
 
-    Documents are joined with BOS tokens between them and cut into rows of exactly n_ctx tokens.
-    streaming=True downloads only the first n_samples documents, for huge datasets like FineWeb-Edu.
+    Documents are joined with an end-of-text token between them and cut into rows of exactly n_ctx tokens,
+    each starting with BOS. streaming=True downloads only the first n_samples documents, for huge datasets
+    like FineWeb-Edu. The test split is test_size rows, or 10% of the rows if that's smaller (small test runs).
     """
     if streaming:
         stream = datasets.load_dataset(path, name=name, split="train", streaming=True)
@@ -36,6 +37,14 @@ def load_text_dataset(
         column_name=column,
         add_bos_token=True,
         num_proc=num_proc or os.cpu_count() or 1,
+    )
+    n_rows = len(tokenized)
+    if n_rows < 2:
+        raise ValueError(f"{len(dataset)} documents gave only {n_rows} sequence(s) of {n_ctx} tokens; load more")
+    test_size = max(1, min(test_size, n_rows // 10))
+    print(
+        f"{len(dataset):,} documents -> {n_rows:,} sequences of {n_ctx} tokens "
+        f"({n_rows * n_ctx:,} tokens); {test_size:,} held out for testing"
     )
     return tokenized.train_test_split(test_size=test_size)
 
