@@ -4,16 +4,18 @@ version = "0.1.0"
 description = "GPT-2 small implemented from scratch (ARENA), with sampling and training on TinyStories"
 readme = "README.md"
 requires-python = ">=3.12"
+# Lower bounds are the oldest versions the code needs, not the newest ones, so installing into an
+# environment that already has these packages (like Colab) keeps them instead of upgrading them.
 dependencies = [
-    "datasets>=5.2.0",
-    "einops>=0.8.2",
-    "jaxtyping>=0.3.11",
-    "numpy>=2.5.4",
-    "torch>=2.15.0",
+    "datasets>=2.14",
+    "einops>=0.7",
+    "jaxtyping>=0.2",
+    "numpy",
+    "torch>=2.3",
     "tqdm",
-    "transformer-lens>=3.9,<4",
-    "transformers",
-    "wandb>=0.31.0",
+    "transformer-lens>=2.0,<4",
+    "transformers>=4.30",
+    "wandb>=0.16",
 ]
 
 [dependency-groups]

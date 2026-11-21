@@ -24,6 +24,9 @@ class Attention(nn.Module):
         nn.init.normal_(self.W_V, std=self.cfg.init_range)
         nn.init.normal_(self.W_O, std=self.cfg.init_range)
         self.register_buffer("IGNORE", torch.tensor(float("-inf"), dtype=torch.float32))
+        # Set by gpt2.induction.capture_patterns(); when True, forward() keeps its attention pattern here.
+        self.store_pattern = False
+        self.pattern: Float[Tensor, "batch n_heads query_pos key_pos"] | None = None
 
     def forward(self,
                 normalized_resid_pre: Float[Tensor, "batch pos d_model"]
@@ -59,6 +62,8 @@ class Attention(nn.Module):
         )
         attn_scores_masked = self.apply_causal_mask(attn_scores / self.cfg.d_head ** 0.5)
         attn_pattern = attn_scores_masked.softmax(-1)
+        if self.store_pattern:
+            self.pattern = attn_pattern.detach()
 
         z = einops.einsum(
             v,

@@ -12,3 +12,4 @@ class Config:
     d_mlp: int = 3072
     n_heads: int = 12
     n_layers: int = 12
+    attn_only: bool = False  # drop the MLPs (and ln2): the cleanest setting for studying induction heads
